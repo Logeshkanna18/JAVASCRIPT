@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Manager</title>
+    <link rel="stylesheet" href="styles.css">
+    <script defer src="script.js"></script>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #eef1f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .wrapper {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+            width: 350px;
+            text-align: center;
+        }
+        .input-section input, .input-section textarea, select {
+            width: 95%;
+            padding: 8px;
+            margin-top: 10px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+        }
+        button {
+            background-color: #ff5733;
+            color: white;
+            border: none;
+            padding: 10px;
+            margin-top: 10px;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .filters {
+            margin: 10px 0;
+        }
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+        li {
+            background: #f9f9f9;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .completed {
+            text-decoration: line-through;
+            color: darkgreen;
+        }
+    </style>
+</head>
+<body>
+    <div class="wrapper">
+        <h1>Task Manager Application</h1>
+        <div class="input-section">
+            <input type="text" id="taskTitle" placeholder="Enter task title">
+            <textarea id="taskDetails" placeholder="Enter task details"></textarea>
+            <button id="addTaskBtn">Create Task</button>
+        </div>
+        <div class="filters">
+            <label for="taskFilter">Filter:</label>
+            <select id="taskFilter">
+                <option value="all">All</option>
+                <option value="completed">Completed</option>
+                <option value="pending">Pending</option>
+            </select>
+        </div>
+        <ul id="taskContainer"></ul>
+    </div>
+
+    <script>
+        class TaskItem {
+            constructor(title, details, status = 'pending') {
+                this.id = Date.now().toString();
+                this.title = title;
+                this.details = details;
+                this.status = status;
+            }
+        }
+
+        const tasks = JSON.parse(localStorage.getItem('tasksList')) || [];
+
+        document.getElementById('addTaskBtn').addEventListener('click', () => {
+            const title = document.getElementById('taskTitle').value.trim();
+            const details = document.getElementById('taskDetails').value.trim();
+
+            if (!title) {
+                alert('Please enter a task title.');
+                return;
+            }
+
+            const newTask = new TaskItem(title, details);
+            tasks.push(newTask);
+            localStorage.setItem('tasksList', JSON.stringify(tasks));
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDetails').value = '';
+            renderTaskList();
+        });
+
+        function removeTask(id) {
+            const index = tasks.findIndex(task => task.id === id);
+            if (index !== -1) {
+                tasks.splice(index, 1);
+                localStorage.setItem('tasksList', JSON.stringify(tasks));
+                renderTaskList();
+            }
+        }
+
+        function toggleTaskStatus(id) {
+            tasks.forEach(task => {
+                if (task.id === id) {
+                    task.status = task.status === 'pending' ? 'completed' : 'pending';
+                }
+            });
+            localStorage.setItem('tasksList', JSON.stringify(tasks));
+            renderTaskList();
+        }
+
+        function editTask(id) {
+            const task = tasks.find(task => task.id === id);
+            if (task) {
+                const newTitle = prompt('Edit task title:', task.title);
+                const newDetails = prompt('Edit task details:', task.details);
+                if (newTitle !== null) task.title = newTitle.trim();
+                if (newDetails !== null) task.details = newDetails.trim();
+                localStorage.setItem('tasksList', JSON.stringify(tasks));
+                renderTaskList();
+            }
+        }
+
+        function renderTaskList() {
+            const taskContainer = document.getElementById('taskContainer');
+            const filter = document.getElementById('taskFilter').value;
+            taskContainer.innerHTML = '';
+
+            tasks.filter(task => filter === 'all' || task.status === filter)
+                 .forEach(task => {
+                    const taskElement = document.createElement('li');
+                    taskElement.innerHTML = `
+                        <div>
+                            <strong class="${task.status === 'completed' ? 'completed' : ''}">${task.title}</strong>
+                            <p>${task.details}</p>
+                        </div>
+                        <div>
+                            <button onclick="toggleTaskStatus('${task.id}')">${task.status === 'completed' ? 'Undo' : 'Done'}</button>
+                            <button onclick="editTask('${task.id}')">Edit</button>
+                            <button onclick="removeTask('${task.id}')">Remove</button>
+                        </div>
+                    `;
+                    taskContainer.appendChild(taskElement);
+                });
+        }
+
+        document.getElementById('taskFilter').addEventListener('change', renderTaskList);
+
+        renderTaskList();
+    </script>
+</body>
+</html>
